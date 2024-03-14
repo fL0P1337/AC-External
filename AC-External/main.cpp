@@ -39,6 +39,7 @@ int main(int, char**)
     bool ammo = false;
     bool firerate = false;
     bool armor = false;
+    bool aimbot = false;
 
 
     RECT desktop;
@@ -167,7 +168,25 @@ int main(int, char**)
             uintptr_t ammobaseaddress = FindDMAAddy(hProcess, PlayerBase, firerate_offset);
             WriteProcessMemory(hProcess, (LPVOID)ammobaseaddress, &firerate, sizeof(firerate), nullptr);
         }
+        if (aimbot) {
+            DWORD entity1_yawInt;
+            DWORD player_yawInt;
+            int apitch = -90;
+            uintptr_t ModuleBase = GetModuleBaseAddress("ac_client.exe");
+            uintptr_t entitylist = ModuleBase + 0x10F4F8;
+            uintptr_t PlayerBase = ModuleBase + 0x109B74;
+            std::vector<unsigned int> entity1_pitch_offset = { 0x4, 0x44 };
+            std::vector<unsigned int> entity1_yaw_offset = { 0x4 ,0x40 };
+            std::vector<unsigned int> yaw_offset = { 0x40 };
+            std::vector<unsigned int> pitch_offset = { 0x44 };
+            uintptr_t entity1_pitch = FindDMAAddy(hProcess, entitylist, entity1_pitch_offset);
+            uintptr_t playerYAWBASE = FindDMAAddy(hProcess, PlayerBase, yaw_offset);
+            uintptr_t entity1_yaw = FindDMAAddy(hProcess, entitylist, entity1_yaw_offset);
+            ReadProcessMemory(hProcess, (void*)entity1_yaw, &entity1_yawInt, sizeof(player_yawInt), nullptr);
+            WriteProcessMemory(hProcess, (void*)entity1_pitch, &apitch, sizeof(apitch), 0);
+            WriteProcessMemory(hProcess, (void*)playerYAWBASE, &entity1_yawInt, sizeof(entity1_yawInt), 0);
 
+        }
 
         ImGui::NewFrame();
 
@@ -194,6 +213,7 @@ int main(int, char**)
             ImGui::Checkbox("Infinite Ammo", &ammo);
             ImGui::SameLine();
             ImGui::Checkbox("FireRate", &firerate);
+            ImGui::Checkbox("Shitty Aimbot", &aimbot);
         }
         ImGui::End();
 

@@ -15,8 +15,8 @@ static LPDIRECT3D9              g_pD3D = NULL;
 static LPDIRECT3DDEVICE9        g_pd3dDevice = NULL;
 static D3DPRESENT_PARAMETERS    g_d3dpp = {};
 static ImFont* DefaultFont = nullptr;
-static int WindowWidth = 400;
-static int WindowHeight = 200;
+static int WindowWidth = 350;
+static int WindowHeight = 220;
 
 HRESULT CreateDeviceD3D(HWND hWnd)
 {
