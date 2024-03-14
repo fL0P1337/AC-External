@@ -4,9 +4,20 @@
 #include <Windows.h>
 #include <TlHelp32.h>
 #include <vector>
+#define M_PI 3.14159265358979323846
 HWND GD_window;
 DWORD procID;
 HANDLE hProcess = "ac_client.exe";
+DWORD entity1_healthInt;
+float entity1_xposInt;
+float entity1_zposInt;
+float entity1_yposInt;
+
+DWORD player_healthInt;
+float player_xposInt;
+float player_zposInt;
+float player_yposInt;
+float player_pitchInt;
 uintptr_t GetModuleBaseAddress(const char* modName) {
     HANDLE hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, procID);
     if (hSnap != INVALID_HANDLE_VALUE) {
@@ -39,7 +50,7 @@ int main(int, char**)
     bool ammo = false;
     bool firerate = false;
     bool armor = false;
-    bool aimbot = false;
+    bool aimbotX = false;
 
 
     RECT desktop;
@@ -168,24 +179,46 @@ int main(int, char**)
             uintptr_t ammobaseaddress = FindDMAAddy(hProcess, PlayerBase, firerate_offset);
             WriteProcessMemory(hProcess, (LPVOID)ammobaseaddress, &firerate, sizeof(firerate), nullptr);
         }
-        if (aimbot) {
-            DWORD entity1_yawInt;
-            DWORD player_yawInt;
-            int apitch = -90;
+        if (aimbotX) {
             uintptr_t ModuleBase = GetModuleBaseAddress("ac_client.exe");
-            uintptr_t entitylist = ModuleBase + 0x10F4F8;
             uintptr_t PlayerBase = ModuleBase + 0x109B74;
-            std::vector<unsigned int> entity1_pitch_offset = { 0x4, 0x44 };
-            std::vector<unsigned int> entity1_yaw_offset = { 0x4 ,0x40 };
-            std::vector<unsigned int> yaw_offset = { 0x40 };
-            std::vector<unsigned int> pitch_offset = { 0x44 };
-            uintptr_t entity1_pitch = FindDMAAddy(hProcess, entitylist, entity1_pitch_offset);
-            uintptr_t playerYAWBASE = FindDMAAddy(hProcess, PlayerBase, yaw_offset);
-            uintptr_t entity1_yaw = FindDMAAddy(hProcess, entitylist, entity1_yaw_offset);
-            ReadProcessMemory(hProcess, (void*)entity1_yaw, &entity1_yawInt, sizeof(player_yawInt), nullptr);
-            WriteProcessMemory(hProcess, (void*)entity1_pitch, &apitch, sizeof(apitch), 0);
-            WriteProcessMemory(hProcess, (void*)playerYAWBASE, &entity1_yawInt, sizeof(entity1_yawInt), 0);
+            uintptr_t entitylist = ModuleBase + 0x10F4F8;
+            std::vector<unsigned int> entity1_xpos_offset = { 0x4, 0x4 };
+            std::vector<unsigned int> entity1_ypos_offset = { 0x4, 0x8 };
+            std::vector<unsigned int> entity1_zpos_offset = { 0x4, 0x40 };
+            std::vector<unsigned int> zpos_offset = { 0x40 };
+            std::vector<unsigned int> ypos_offset = { 0x8 };
+            std::vector<unsigned int> xpos_offset = { 0x4 };
+            uintptr_t entity1_zpos = FindDMAAddy(hProcess, entitylist, entity1_zpos_offset);
+            uintptr_t entity1_ypos = FindDMAAddy(hProcess, entitylist, entity1_ypos_offset);
+            uintptr_t entity1_xpos = FindDMAAddy(hProcess, entitylist, entity1_xpos_offset);
+            uintptr_t player_zpos = FindDMAAddy(hProcess, PlayerBase, zpos_offset);
+            uintptr_t player_ypos = FindDMAAddy(hProcess, PlayerBase, ypos_offset);
+            uintptr_t player_xpos = FindDMAAddy(hProcess, PlayerBase, xpos_offset);
+            ReadProcessMemory(hProcess, (void*)player_xpos, &player_xposInt, sizeof(player_xposInt), nullptr);
+            ReadProcessMemory(hProcess, (void*)player_ypos, &player_yposInt, sizeof(player_yposInt), nullptr);
+            ReadProcessMemory(hProcess, (void*)player_zpos, &player_zposInt, sizeof(player_zposInt), nullptr);
+            ReadProcessMemory(hProcess, (void*)entity1_xpos, &entity1_xposInt, sizeof(entity1_yposInt), nullptr);
+            ReadProcessMemory(hProcess, (void*)entity1_ypos, &entity1_yposInt, sizeof(entity1_yposInt), nullptr);
+            ReadProcessMemory(hProcess, (void*)entity1_zpos, &entity1_zposInt, sizeof(entity1_zposInt), nullptr);
+            float abspos_x = entity1_xposInt - player_xposInt;
+            float abspos_y = entity1_yposInt - player_yposInt;
+            float abspos_z = entity1_zposInt - player_zposInt;
 
+            float azimuth_xy = atan2f(abspos_y, abspos_x);
+
+            float yaw = (float)(azimuth_xy * (180.0 / M_PI));
+            if (abspos_y < 0) {
+                abspos_y *= -1;
+            }
+            if (abspos_y < 5) {
+                if (abspos_x < 0) {
+                    abspos_x *= -1;
+                }
+                abspos_y = abspos_x;
+            }
+            yaw += 90;
+            WriteProcessMemory(hProcess, (void*)player_zpos, &yaw, sizeof(yaw), 0);
         }
 
         ImGui::NewFrame();
@@ -213,7 +246,7 @@ int main(int, char**)
             ImGui::Checkbox("Infinite Ammo", &ammo);
             ImGui::SameLine();
             ImGui::Checkbox("FireRate", &firerate);
-            ImGui::Checkbox("Shitty Aimbot", &aimbot);
+            ImGui::Checkbox("Aimbot X", &aimbotX);
         }
         ImGui::End();
 
