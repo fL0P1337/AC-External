@@ -4,10 +4,9 @@
 #include <Windows.h>
 #include <TlHelp32.h>
 #include <vector>
+#include ".\memory.h"
 #define M_PI 3.14159265358979323846
-HWND GD_window;
-DWORD procID;
-HANDLE hProcess = "ac_client.exe";
+
 DWORD entity1_healthInt;
 float entity1_xposInt;
 float entity1_zposInt;
@@ -18,31 +17,6 @@ float player_xposInt;
 float player_zposInt;
 float player_yposInt;
 float player_pitchInt;
-uintptr_t GetModuleBaseAddress(const char* modName) {
-    HANDLE hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, procID);
-    if (hSnap != INVALID_HANDLE_VALUE) {
-        MODULEENTRY32 modEntry;
-        modEntry.dwSize = sizeof(modEntry);
-        if (Module32First(hSnap, &modEntry)) {
-            do {
-                if (!strcmp(modEntry.szModule, modName)) {
-                    CloseHandle(hSnap);
-                    return (uintptr_t)modEntry.modBaseAddr;
-                }
-            } while (Module32Next(hSnap, &modEntry));
-        }
-    }
-}
-uintptr_t FindDMAAddy(HANDLE hProc, uintptr_t ptr, std::vector<unsigned int> offsets)
-{
-    uintptr_t addr = ptr;
-    for (unsigned int i = 0; i < offsets.size(); ++i)
-    {
-        ReadProcessMemory(hProc, (BYTE*)addr, &addr, sizeof(addr), 0);
-        addr += offsets[i];
-    }
-    return addr;
-}
 
 int main(int, char**)
 {
@@ -183,16 +157,6 @@ int main(int, char**)
             uintptr_t ModuleBase = GetModuleBaseAddress("ac_client.exe");
             uintptr_t PlayerBase = ModuleBase + 0x109B74;
             uintptr_t entitylist = ModuleBase + 0x10F4F8;
-            uintptr_t entityslot = 0x4;
-            std::vector<unsigned int> entity1_xpos_offset = { entityslot, 0x4 };
-            std::vector<unsigned int> entity1_ypos_offset = { entityslot, 0x8 };
-            std::vector<unsigned int> entity1_zpos_offset = { entityslot, 0x40 };
-            std::vector<unsigned int> entity1_health_offset = { entityslot, 0xF8 };
-            std::vector<unsigned int> zpos_offset = { 0x40 };
-            std::vector<unsigned int> ypos_offset = { 0x8 };
-            std::vector<unsigned int> xpos_offset = { 0x4 };
-            std::vector<unsigned int> entity1_pitch_offset = { 0x4, 0x44 };
-            std::vector<unsigned int> pitch_offset = { 0x44 };
             uintptr_t entity1_zpos = FindDMAAddy(hProcess, entitylist, entity1_zpos_offset);
             uintptr_t entity1_ypos = FindDMAAddy(hProcess, entitylist, entity1_ypos_offset);
             uintptr_t entity1_xpos = FindDMAAddy(hProcess, entitylist, entity1_xpos_offset);
