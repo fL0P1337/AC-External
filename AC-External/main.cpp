@@ -12,7 +12,7 @@ DWORD entity1_healthInt;
 float entity1_xposInt;
 float entity1_zposInt;
 float entity1_yposInt;
-
+float entity1_pitchInt;
 DWORD player_healthInt;
 float player_xposInt;
 float player_zposInt;
@@ -183,24 +183,33 @@ int main(int, char**)
             uintptr_t ModuleBase = GetModuleBaseAddress("ac_client.exe");
             uintptr_t PlayerBase = ModuleBase + 0x109B74;
             uintptr_t entitylist = ModuleBase + 0x10F4F8;
-            std::vector<unsigned int> entity1_xpos_offset = { 0x4, 0x4 };
-            std::vector<unsigned int> entity1_ypos_offset = { 0x4, 0x8 };
-            std::vector<unsigned int> entity1_zpos_offset = { 0x4, 0x40 };
+            uintptr_t entityslot = 0x4;
+            std::vector<unsigned int> entity1_xpos_offset = { entityslot, 0x4 };
+            std::vector<unsigned int> entity1_ypos_offset = { entityslot, 0x8 };
+            std::vector<unsigned int> entity1_zpos_offset = { entityslot, 0x40 };
+            std::vector<unsigned int> entity1_health_offset = { entityslot, 0xF8 };
             std::vector<unsigned int> zpos_offset = { 0x40 };
             std::vector<unsigned int> ypos_offset = { 0x8 };
             std::vector<unsigned int> xpos_offset = { 0x4 };
+            std::vector<unsigned int> entity1_pitch_offset = { 0x4, 0x44 };
+            std::vector<unsigned int> pitch_offset = { 0x44 };
             uintptr_t entity1_zpos = FindDMAAddy(hProcess, entitylist, entity1_zpos_offset);
             uintptr_t entity1_ypos = FindDMAAddy(hProcess, entitylist, entity1_ypos_offset);
             uintptr_t entity1_xpos = FindDMAAddy(hProcess, entitylist, entity1_xpos_offset);
             uintptr_t player_zpos = FindDMAAddy(hProcess, PlayerBase, zpos_offset);
             uintptr_t player_ypos = FindDMAAddy(hProcess, PlayerBase, ypos_offset);
             uintptr_t player_xpos = FindDMAAddy(hProcess, PlayerBase, xpos_offset);
+            uintptr_t entity1_health = FindDMAAddy(hProcess, entitylist, entity1_health_offset);
+            uintptr_t entity1_pitch = FindDMAAddy(hProcess, entitylist, entity1_pitch_offset);
+            uintptr_t player_pitch = FindDMAAddy(hProcess, PlayerBase, pitch_offset);
             ReadProcessMemory(hProcess, (void*)player_xpos, &player_xposInt, sizeof(player_xposInt), nullptr);
             ReadProcessMemory(hProcess, (void*)player_ypos, &player_yposInt, sizeof(player_yposInt), nullptr);
             ReadProcessMemory(hProcess, (void*)player_zpos, &player_zposInt, sizeof(player_zposInt), nullptr);
             ReadProcessMemory(hProcess, (void*)entity1_xpos, &entity1_xposInt, sizeof(entity1_yposInt), nullptr);
             ReadProcessMemory(hProcess, (void*)entity1_ypos, &entity1_yposInt, sizeof(entity1_yposInt), nullptr);
             ReadProcessMemory(hProcess, (void*)entity1_zpos, &entity1_zposInt, sizeof(entity1_zposInt), nullptr);
+            ReadProcessMemory(hProcess, (void*)entity1_health, &entity1_healthInt, sizeof(entity1_health), nullptr);
+            ReadProcessMemory(hProcess, (void*)entity1_pitch, &entity1_pitchInt, sizeof(entity1_pitchInt), 0);
             float abspos_x = entity1_xposInt - player_xposInt;
             float abspos_y = entity1_yposInt - player_yposInt;
             float abspos_z = entity1_zposInt - player_zposInt;
@@ -217,8 +226,12 @@ int main(int, char**)
                 }
                 abspos_y = abspos_x;
             }
+            if (entity1_healthInt > 100) {
+                entityslot += 0x4;
+            }
             yaw += 90;
             WriteProcessMemory(hProcess, (void*)player_zpos, &yaw, sizeof(yaw), 0);
+            WriteProcessMemory(hProcess, (void*)player_pitch, &entity1_pitchInt, sizeof(entity1_pitchInt), 0);
         }
 
         ImGui::NewFrame();
@@ -246,7 +259,7 @@ int main(int, char**)
             ImGui::Checkbox("Infinite Ammo", &ammo);
             ImGui::SameLine();
             ImGui::Checkbox("FireRate", &firerate);
-            ImGui::Checkbox("Aimbot X", &aimbotX);
+            ImGui::Checkbox("Aimbot", &aimbotX);
         }
         ImGui::End();
 
